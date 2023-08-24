@@ -1,5 +1,7 @@
 import java.io.*;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DBWorker {
 
@@ -17,44 +19,56 @@ public class DBWorker {
     }
 
     public void fillInTheCoinsTable() {
-        Connection connection = null;
-        Statement statement = null;
 
-        String fileName = "sql.txt";
-        String data = "insert into coins (face_value, currency, country, year) values ('1', 'penny', 'United Kingdom', 1971);\n" +
+        String fileNameInsert = "sql_insert.txt";
+        String dataInsert = "insert into coins (face_value, currency, country, year) values ('1', 'penny', 'United Kingdom', 1971);\n" +
                 "insert into coins (face_value, currency, country, year) values ('5', 'pence', 'United Kingdom', 1968);\n" +
                 "insert into coins (face_value, currency, country, year) values ('1', 'pound', 'United Kingdom', 1983);";
 
-        try {
-            connection = DriverManager.getConnection(URL, LOGIN, PASSWORD);
-            statement = connection.createStatement();
+        String fileNameSelect = "sql_select.txt";
+        String dataSelect = "SELECT * FROM coins";
 
-            FileWriter fileWriter = new FileWriter(fileName);
-            fileWriter.write(data);
-            fileWriter.close();
+        List<Coin> coins = new ArrayList<>();
 
-            FileReader fileReader = new FileReader(fileName);
-            BufferedReader bufferedReader = new BufferedReader(fileReader);
+        try (Connection connection = DriverManager.getConnection(URL, LOGIN, PASSWORD);
+             Statement statement = connection.createStatement()){
+
+            FileWriter fileWriterInsert = new FileWriter(fileNameInsert);
+            fileWriterInsert.write(dataInsert);
+            fileWriterInsert.close();
+
+            FileWriter fileWriterSelect = new FileWriter(fileNameSelect);
+            fileWriterSelect.write(dataSelect);
+            fileWriterSelect.close();
+
+            FileReader fileReaderInsert = new FileReader(fileNameInsert);
+            BufferedReader bufferedReaderInsert = new BufferedReader(fileReaderInsert);
             String line;
 
-            while ((line = bufferedReader.readLine()) != null) {
+            while ((line = bufferedReaderInsert.readLine()) != null) {
                 int res = statement.executeUpdate(line);
             }
 
-            ResultSet resultSet = statement.executeQuery("SELECT * FROM coins");
+            FileReader fileReaderSelect = new FileReader(fileNameSelect);
+            BufferedReader bufferedReaderSelect = new BufferedReader(fileReaderSelect);
+            String select = bufferedReaderSelect.readLine();
+
+            ResultSet resultSet = statement.executeQuery(select);
             while (resultSet.next()) {
-                System.out.println(resultSet);
+                String face_value = resultSet.getString(2);
+                String currency = resultSet.getString(3);
+                String country = resultSet.getString(4);
+                int year = resultSet.getInt(5);
+                Coin coin = new Coin(face_value, currency, country, year);
+                coins.add(coin);
+            }
+
+            for (Coin coin : coins) {
+                System.out.println(coin.getFace_value() + " " + coin.getCurrency() + " " + coin.getCountry() + " " + coin.getYear());
             }
 
         } catch (SQLException | IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                connection.close();
-                statement.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
         }
     }
 }
